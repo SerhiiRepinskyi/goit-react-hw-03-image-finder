@@ -1,20 +1,11 @@
 import React, { Component } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import fetchImagesOnQuery from 'services/api';
 import Searchbar from './Searchbar';
 import ImageGallery from './ImageGallery';
 import Button from './Button';
 import Loader from './Loader';
-
-const API_KEY = '33991160-081e616815ce3868e88aa394f';
-const URL = 'https://pixabay.com/api/';
-
-const Status = {
-  IDLE: 'idle',
-  PENDING: 'pending',
-  RESOLVED: 'resolved',
-  REJECTED: 'rejected',
-};
 
 export class App extends Component {
   state = {
@@ -22,64 +13,63 @@ export class App extends Component {
     pictures: [],
     page: 1,
     error: null,
-    totalImages: 0,
-    status: Status.IDLE,
-  };
-
-  fetchImg = () => {
-    return fetch(
-      `${URL}?q=${this.state.query}&page=${this.state.page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
-    )
-      .then(response => {
-        // Обробка помилки 404
-        if (response.ok) {
-          return response.json();
-        }
-        return Promise.reject(new Error('Failed to find any images'));
-      })
-      .then(pictures => {
-        // console.log(pictures);
-        if (!pictures.total) {
-          toast.error(
-            `Sorry!!! Nothing was found for query: "${this.state.query}"`
-          );
-        }
-        const selectedProperties = pictures.hits.map(
-          ({ id, webformatURL, largeImageURL, tags }) => {
-            return { id, webformatURL, largeImageURL, tags };
-          }
-        );
-        // console.log(selectedProperties);
-        this.setState(prevState => {
-          return {
-            pictures: [...prevState.pictures, ...selectedProperties],
-            status: 'resolved',
-            totalImages: pictures.total,
-          };
-        });
-      })
-      .catch(error => this.setState({ error, status: 'rejected' }));
+    isLoading: false,
   };
 
   componentDidUpdate(prevProps, prevState) {
-    if (this.state.query !== prevState.query) {
-      this.setState({ status: 'pending', pictures: [], page: 1 });
-      this.fetchImg();
-    }
     if (
-      this.state.query === prevState.query &&
-      this.state.page !== prevState.page
+      prevState.query !== this.state.query ||
+      prevState.page !== this.state.page
     ) {
-      this.setState({ status: 'pending' });
-      this.fetchImg();
+      this.uploadImages();
     }
   }
 
-  handleFormSubmit = query => {
-    // console.log(query);
-    this.setState({ query });
+  async uploadImages() {
+    this.setState({ isLoading: true });
+
+    try {
+      // const { totalHits, hits } = await fetchImagesOnQuery(
+      //   this.state.query,
+      //   this.state.page
+      // );
+      const responseApi = await fetchImagesOnQuery(
+        this.state.query,
+        this.state.page
+      );
+
+      if (!responseApi.totalHits) {
+        toast.error(
+          `Ooops... Sorry!!! Nothing was found for query: "${this.state.query}"`
+        );
+        throw new Error('No data :-(');
+      }
+
+      const selectedProperties = responseApi.hits.map(
+        ({ id, webformatURL, largeImageURL, tags }) => {
+          return { id, webformatURL, largeImageURL, tags };
+        }
+      );
+
+      // Оновлення масиву зображень (необхідно при настиканні кнопки Load more)
+      this.setState(prevState => ({
+        pictures: [...prevState.pictures, ...selectedProperties],
+      }));
+    } catch (error) {
+      this.setState({ error });
+    } finally {
+      this.setState({ isLoading: false });
+    }
+  }
+
+  // Оновити state App за пошуковим запитом
+  handleFormSubmit = searchQuery => {
+    if (this.state.query !== searchQuery) {
+      this.setState({ query: searchQuery, pictures: [], page: 1 });
+    }
   };
 
+  // Завантажити наступну сторінку картинок
   handleLoadMore = () => {
     this.setState(prevState => {
       return { page: prevState.page + 1 };
@@ -87,19 +77,17 @@ export class App extends Component {
   };
 
   render() {
-    const { pictures, status, totalImages } = this.state;
+    const { query, pictures, page, isLoading } = this.state;
+    const isShowGallery = pictures.length > 0 && query;
+    const isShowButton = isShowGallery && !isLoading && !(pictures.length % 12);
 
     return (
       <>
         <Searchbar onSubmit={this.handleFormSubmit} />
-        <section>
-          {pictures.length > 0 && <ImageGallery images={pictures} />}
-          {totalImages > pictures.length && (
-            <Button onClick={this.handleLoadMore} />
-          )}
-        </section>
+        {isShowGallery && <ImageGallery pictures={pictures} page={page} />}
+        {isShowButton && <Button onClick={this.handleLoadMore} />}
+        {isLoading && <Loader />}
 
-        {status === 'pending' && <Loader />}
         <ToastContainer autoClose={2500} />
       </>
     );

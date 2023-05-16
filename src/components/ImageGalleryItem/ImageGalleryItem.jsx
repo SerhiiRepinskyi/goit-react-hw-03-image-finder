@@ -3,31 +3,31 @@ import PropTypes from 'prop-types';
 import css from './ImageGalleryItem.module.css';
 
 export default class ImageGalleryItem extends Component {
-  render() {
-    return (
-      // <li className={css.imageGalleryItem} key={this.props.keyForLi}>
-      //   <img src={this.props.smallImgURL} alt={this.props.descriptionImg} />
-      // </li>
+  static defaultProps = {
+    src: '',
+    alt: '',
+    largeImage: '',
+  };
 
+  createModal = () => {
+    const { largeImage, alt } = this.props;
+    this.props.isShowModal(largeImage, alt);
+  };
+
+  render() {
+    const { src, alt } = this.props;
+
+    return (
       <li className={css.imageGalleryItem}>
-        <img src={this.props.smallImgURL} alt={this.props.id} />
+        <img src={src} alt={alt} onClick={this.createModal} />
       </li>
     );
   }
 }
 
-// const ImageGalleryItem = ({ keyForLi, smallImgURL, descriptionImg }) => (
-//   <li className={css.imageGalleryItem} key={keyForLi}>
-//     <img src={smallImgURL} alt={descriptionImg} />
-//   </li>
-// );
-
 ImageGalleryItem.propTypes = {
-  // keyForLi: PropTypes.number.isRequired,
-  // smallImgURL: PropTypes.string.isRequired,
-  // descriptionImg: PropTypes.string.isRequired,
-  id: PropTypes.number.isRequired,
-  smallImgURL: PropTypes.string.isRequired,
+  src: PropTypes.string.isRequired,
+  alt: PropTypes.string.isRequired,
+  largeImage: PropTypes.string.isRequired,
+  isShowModal: PropTypes.func.isRequired,
 };
-
-// export default ImageGalleryItem;

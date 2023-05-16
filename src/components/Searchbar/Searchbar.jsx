@@ -5,12 +5,12 @@ import css from './Searchbar.module.css';
 
 export default class Searchbar extends Component {
   state = {
-    query: '',
+    searchQuery: '',
   };
 
-  // Обробник для інпуту, відповідає за оновлення стану
+  // Обробник для інпуту, відповідає за оновлення state Searchbar
   handleInputChange = event => {
-    this.setState({ query: event.currentTarget.value.toLowerCase() });
+    this.setState({ searchQuery: event.currentTarget.value.toLowerCase() });
   };
 
   // Викликається під час submit - пошуку
@@ -18,20 +18,24 @@ export default class Searchbar extends Component {
     event.preventDefault();
 
     // Відміняємо пошук по пустій стрічці
-    if (this.state.query.trim() === '') {
-      toast.error('Enter your search query!');
+    if (this.state.searchQuery.trim() === '') {
+      toast.error('Hello!:-) Finally enter your search query!');
       return;
     }
 
-    // Передаємо через prop значення query в state App
-    this.props.onSubmit(this.state.query);
-    // this.setState({ query: '' }); // -- Очистка після submit
+    // Передаємо через prop значення searchQuery в App
+    this.props.onSubmit(this.state.searchQuery);
+
+    // Очистка після submit
+    // this.setState({ searchQuery: '' });
   };
 
   render() {
+    const { handleInputChange, handleSubmit } = this;
+
     return (
       <header className={css.searchbar}>
-        <form className={css.searchForm} onSubmit={this.handleSubmit}>
+        <form className={css.searchForm} onSubmit={handleSubmit}>
           <button type="submit" className={css.searchFormButton}>
             <span className={css.searchFormButtonLabel}>Search</span>
           </button>
@@ -42,8 +46,8 @@ export default class Searchbar extends Component {
             autoComplete="off"
             autoFocus
             placeholder="Search images and photos"
-            value={this.state.query}
-            onChange={this.handleInputChange}
+            value={this.state.searchQuery}
+            onChange={handleInputChange}
           />
         </form>
       </header>
